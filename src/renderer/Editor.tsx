@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { catalogKey } from '../shared/catalog';
 import { Copy, Eye, FileDown, Plus, Printer, Save, Trash2 } from 'lucide-react';
 import {
   calculate,
@@ -32,7 +33,11 @@ export function Editor({
   const [preview, setPreview] = useState(false);
   const [dirty, setDirty] = useState(initial.revision === 0);
   const locked = doc.status === 'final' && doc.revision > 0;
-  const currency = 'currency' in doc ? doc.currency : data.settings.currency;
+  const currency = doc.currency ?? data.settings.currency;
+  const customers = data.customers.filter((customer) => !customer.archived);
+  const products = data.products.filter(
+    (product) => !product.archived && product.currency === currency,
+  );
   let totals;
   try {
     totals = calculate(
@@ -61,6 +66,33 @@ export function Editor({
     setDoc((current) => ({ ...current, ...patch }));
     setDirty(true);
     onDirty(true);
+  }
+  function setCustomerName(name: string) {
+    const customer = customers.find(
+      (value) => catalogKey(value.name) === catalogKey(name),
+    );
+    update({ clientName: name, customerId: customer?.id ?? null });
+  }
+  function setProductName(id: string, name: string) {
+    const product = products.find(
+      (value) => catalogKey(value.name) === catalogKey(name),
+    );
+    update({
+      items: doc.items.map((item) =>
+        item.id !== id
+          ? item
+          : product
+            ? {
+                ...item,
+                name: product.name,
+                productId: product.id,
+                description: product.description,
+                unitPrice: product.unitPrice,
+                taxPercent: product.taxPercent,
+              }
+            : { ...item, name, productId: null },
+      ),
+    });
   }
   async function save(final = false) {
     if (
@@ -105,6 +137,24 @@ export function Editor({
   }
   return (
     <div className="editor">
+      <datalist id="catalog-customers">
+        {customers.map((customer) => (
+          <option key={customer.id} value={customer.name}>
+            {customer.phone}
+          </option>
+        ))}
+      </datalist>
+      <datalist id="catalog-products">
+        {products.map((product) => (
+          <option key={product.id} value={product.name}>
+            {product.sku} ·{' '}
+            {money(
+              Math.round(Number(product.unitPrice) * 100),
+              product.currency,
+            )}
+          </option>
+        ))}
+      </datalist>
       <div className="editor-toolbar">
         <div className="toolbar-title">
           <span className={`status ${locked ? 'final' : 'draft'}`}>
@@ -219,10 +269,11 @@ export function Editor({
                     اسم العميل <span className="required">*</span>
                     <input
                       aria-label="اسم العميل"
-                      placeholder="اسم الشخص أو الشركة"
+                      list="catalog-customers"
+                      placeholder="اختر عميلاً أو اكتب اسماً جديداً"
                       value={doc.clientName}
                       maxLength={200}
-                      onChange={(e) => update({ clientName: e.target.value })}
+                      onChange={(e) => setCustomerName(e.target.value)}
                     />
                   </label>
                   <label className="span-two">
@@ -250,6 +301,10 @@ export function Editor({
                   </h2>
                   <span className="count-label">{doc.items.length} بند</span>
                 </div>
+                <p className="field-help">
+                  تظهر المنتجات بعملة المستند ({currency}). المنتجات والعملاء
+                  الجدد يُحفظون تلقائياً عند حفظ المستند.
+                </p>
                 <div className="items-list">
                   {doc.items.map((item, index) => (
                     <div className="item-card" key={item.id}>
@@ -273,17 +328,12 @@ export function Editor({
                           اسم البند
                           <input
                             aria-label={`اسم البند ${index + 1}`}
+                            list="catalog-products"
                             value={item.name}
                             maxLength={300}
-                            placeholder="مثال: تصميم الهوية البصرية"
+                            placeholder="اختر منتجاً محفوظاً أو اكتب منتجاً جديداً"
                             onChange={(e) =>
-                              update({
-                                items: doc.items.map((x) =>
-                                  x.id === item.id
-                                    ? { ...x, name: e.target.value }
-                                    : x,
-                                ),
-                              })
+                              setProductName(item.id, e.target.value)
                             }
                           />
                         </label>

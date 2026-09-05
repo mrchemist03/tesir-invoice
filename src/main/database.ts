@@ -1,6 +1,16 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import {
+  catalogKey,
+  customerSchema,
+  productSchema,
+  blankCustomer,
+  blankProduct,
+  type Customer,
+  type Product,
+} from '../shared/catalog';
 import { z } from 'zod';
 import {
   calculate,
@@ -16,6 +26,7 @@ import {
   type Settings,
   type Template,
   type DocumentType,
+  type Item,
 } from '../shared/domain';
 
 const migrations = [
@@ -33,6 +44,13 @@ CREATE TABLE documents (
 );
 CREATE INDEX documents_date ON documents(doc_date DESC);
 CREATE INDEX documents_type_date ON documents(type_id,doc_date DESC);
+`,
+  },
+  {
+    version: 2,
+    sql: `
+CREATE TABLE customers (id TEXT PRIMARY KEY, name_key TEXT NOT NULL UNIQUE, payload TEXT NOT NULL);
+CREATE TABLE products (id TEXT PRIMARY KEY, name_key TEXT NOT NULL, currency TEXT NOT NULL, payload TEXT NOT NULL, UNIQUE(name_key,currency));
 `,
   },
 ];
@@ -56,9 +74,36 @@ export class Store {
         throw new Error(
           'قاعدة البيانات أحدث من هذا التطبيق؛ استخدم إصداراً أحدث',
         );
+      if (
+        current > 0 &&
+        current < migrations.at(-1)!.version &&
+        path !== ':memory:'
+      ) {
+        const directory = join(dirname(path), 'backups');
+        mkdirSync(directory, { recursive: true });
+        this.backup(
+          join(
+            directory,
+            `tesir-before-v${current}-to-v${migrations.at(-1)!.version}-${randomUUID()}.db`,
+          ),
+        );
+      }
       for (const migration of migrations.filter((m) => m.version > current))
         this.transaction(() => {
           this.db.exec(migration.sql);
+          if (migration.version === 2) {
+            // Read snapshots only: historical documents remain byte-for-byte unchanged.
+            for (const row of this.db
+              .prepare(
+                'SELECT payload FROM documents ORDER BY created_at DESC, id',
+              )
+              .all()) {
+              const doc = JSON.parse(row.payload as string) as SavedDocument;
+              this.rememberCustomer(doc.clientName);
+              for (const item of doc.items)
+                this.rememberProduct(item, doc.currency);
+            }
+          }
           this.db.exec(`PRAGMA user_version=${migration.version}`);
         });
       this.transaction(() => {
@@ -108,7 +153,22 @@ export class Store {
         `SELECT d.id,d.number,d.client_name AS clientName,d.doc_date AS date,t.name AS typeName,d.type_id AS typeId,d.status,d.total,d.currency FROM documents d JOIN document_types t ON t.id=d.type_id ORDER BY d.doc_date DESC,d.created_at DESC`,
       )
       .all() as unknown as DocumentSummary[];
-    return { settings: this.getSettings(), types, templates, documents };
+    const customers = this.db
+      .prepare('SELECT payload FROM customers ORDER BY name_key')
+      .all()
+      .map((row) => customerSchema.parse(JSON.parse(row.payload as string)));
+    const products = this.db
+      .prepare('SELECT payload FROM products ORDER BY name_key,currency')
+      .all()
+      .map((row) => productSchema.parse(JSON.parse(row.payload as string)));
+    return {
+      settings: this.getSettings(),
+      types,
+      templates,
+      documents,
+      customers,
+      products,
+    };
   }
   getDocument(id: unknown): SavedDocument {
     const row = this.db
@@ -154,13 +214,21 @@ export class Store {
           existing?.number ??
           `${type.prefix}-${String(type.next_number).padStart(5, '0')}`,
         typeName: type.name as string,
-        currency: existing?.currency ?? company.currency,
+        currency: existing?.currency ?? input.currency ?? company.currency,
         company,
         template,
         totals,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
+      saved.customerId = this.rememberCustomer(
+        input.clientName,
+        input.customerId,
+      );
+      saved.items = input.items.map((item) => ({
+        ...item,
+        productId: this.rememberProduct(item, saved.currency),
+      }));
       if (!existing)
         this.db
           .prepare(
@@ -187,6 +255,126 @@ export class Store {
           now,
         );
       return saved;
+    });
+  }
+  private rememberCustomer(name: string, id?: string | null): string {
+    if (id) {
+      if (!this.db.prepare('SELECT 1 FROM customers WHERE id=?').get(id))
+        throw new Error('العميل المحدد غير موجود؛ اختره من القائمة مجدداً');
+      return id;
+    }
+    const found = this.db
+      .prepare('SELECT id FROM customers WHERE name_key=?')
+      .get(catalogKey(name));
+    if (found) return found.id as string;
+    const customer = customerSchema.parse({
+      ...blankCustomer(),
+      name,
+      revision: 1,
+    });
+    this.db
+      .prepare('INSERT INTO customers VALUES(?,?,?)')
+      .run(customer.id, catalogKey(customer.name), JSON.stringify(customer));
+    return customer.id;
+  }
+  private rememberProduct(item: Item, currency: Product['currency']): string {
+    if (item.productId) {
+      const found = this.db
+        .prepare('SELECT currency FROM products WHERE id=?')
+        .get(item.productId);
+      if (!found || found.currency !== currency)
+        throw new Error(
+          'المنتج المحدد غير موجود أو عملته مختلفة؛ اختره من القائمة مجدداً',
+        );
+      return item.productId;
+    }
+    const found = this.db
+      .prepare('SELECT id FROM products WHERE name_key=? AND currency=?')
+      .get(catalogKey(item.name), currency);
+    if (found) return found.id as string;
+    const product = productSchema.parse({
+      ...blankProduct(currency),
+      name: item.name,
+      description: item.description,
+      unitPrice: item.unitPrice,
+      taxPercent: item.taxPercent,
+      revision: 1,
+    });
+    this.db
+      .prepare('INSERT INTO products VALUES(?,?,?,?)')
+      .run(
+        product.id,
+        catalogKey(product.name),
+        currency,
+        JSON.stringify(product),
+      );
+    return product.id;
+  }
+  saveCustomer(raw: unknown): Customer {
+    const input = customerSchema.parse(raw);
+    return this.transaction(() => {
+      const row = this.db
+        .prepare('SELECT payload FROM customers WHERE id=?')
+        .get(input.id);
+      const existing = row
+        ? customerSchema.parse(JSON.parse(row.payload as string))
+        : null;
+      if ((existing?.revision ?? 0) !== input.revision)
+        throw new Error('تغير العميل؛ أعد فتحه قبل الحفظ');
+      if (
+        this.db
+          .prepare('SELECT 1 FROM customers WHERE name_key=? AND id<>?')
+          .get(catalogKey(input.name), input.id)
+      )
+        throw new Error(
+          'يوجد عميل بهذا الاسم؛ ابحث عنه في القائمة بما فيها المؤرشف',
+        );
+      const customer = { ...input, revision: input.revision + 1 };
+      this.db
+        .prepare(
+          'INSERT INTO customers VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET name_key=excluded.name_key,payload=excluded.payload',
+        )
+        .run(customer.id, catalogKey(customer.name), JSON.stringify(customer));
+      return customer;
+    });
+  }
+  saveProduct(raw: unknown): Product {
+    const input = productSchema.parse(raw);
+    return this.transaction(() => {
+      const row = this.db
+        .prepare('SELECT payload FROM products WHERE id=?')
+        .get(input.id);
+      const existing = row
+        ? productSchema.parse(JSON.parse(row.payload as string))
+        : null;
+      if ((existing?.revision ?? 0) !== input.revision)
+        throw new Error('تغير المنتج؛ أعد فتحه قبل الحفظ');
+      if (existing && existing.currency !== input.currency)
+        throw new Error(
+          'أنشئ منتجاً منفصلاً للعملة الجديدة للحفاظ على المستندات المرتبطة',
+        );
+      if (
+        this.db
+          .prepare(
+            'SELECT 1 FROM products WHERE name_key=? AND currency=? AND id<>?',
+          )
+          .get(catalogKey(input.name), input.currency, input.id)
+      )
+        throw new Error(
+          'يوجد منتج بهذا الاسم والعملة؛ ابحث عنه في القائمة بما فيها المؤرشف',
+        );
+      const product = { ...input, revision: input.revision + 1 };
+      this.db
+        .prepare(
+          'INSERT INTO products VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name_key=excluded.name_key,payload=excluded.payload',
+        )
+        .run(
+          product.id,
+          catalogKey(product.name),
+          product.currency,
+          JSON.stringify(product),
+        );
+      return product;
     });
   }
   saveSettings(raw: unknown): Settings {
