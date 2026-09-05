@@ -1,0 +1,72 @@
+{
+  "name": "tesir-invoice",
+  "productName": "Tesir Invoice",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "description": "Offline Arabic desktop invoicing and document management",
+  "author": "Tesir Me.",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "main": "dist/main/index.cjs",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write src tests scripts *.json *.ts *.html .github/workflows/*.yml",
+    "format:check": "prettier --check src tests scripts *.json *.ts *.html .github/workflows/*.yml",
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "start": "electron .",
+    "package": "npm run build && electron-builder --win nsis",
+    "package:dir": "npm run build && electron-builder --dir"
+  },
+  "dependencies": {
+    "@fontsource-variable/noto-sans-arabic": "5.3.0",
+    "lucide-react": "1.41.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.5.4"
+  },
+  "build": {
+    "appId": "io.github.mrchemist03.tesir-invoice",
+    "productName": "Tesir Invoice",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "LICENSE"
+    ],
+    "asar": true,
+    "win": {
+      "target": "nsis",
+      "signExecutable": false,
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "electron": "44.2.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "prettier": "3.9.6",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2",
+    "vite": "8.2.2"
+  }
+}
