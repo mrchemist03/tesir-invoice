@@ -120,6 +120,8 @@ function registerHandlers() {
       }
     });
   handle('bootstrap', () => store.bootstrap());
+  handle('save-customer', (input) => store.saveCustomer(input));
+  handle('save-product', (input) => store.saveProduct(input));
   handle('get-document', (id) => store.getDocument(id));
   handle('save-document', (input) => store.saveDocument(input));
   handle('save-settings', (input) => store.saveSettings(input));

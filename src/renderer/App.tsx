@@ -9,7 +9,8 @@ import {
   Search,
   Settings2,
   ShieldCheck,
-  Wallet,
+  Users,
+  Package,
   X,
 } from 'lucide-react';
 import {
@@ -24,8 +25,17 @@ import {
 import { api, unwrap } from './api';
 import { Editor } from './Editor';
 import { SettingsPage, TemplatesPage } from './Settings';
+import { CatalogPage } from './CatalogPage';
+import { version } from '../../package.json';
 
-type Page = 'dashboard' | 'documents' | 'editor' | 'settings' | 'templates';
+type Page =
+  | 'dashboard'
+  | 'documents'
+  | 'editor'
+  | 'settings'
+  | 'templates'
+  | 'customers'
+  | 'products';
 export function App() {
   const [data, setData] = useState<Bootstrap | null>(null);
   const [page, setPage] = useState<Page>('dashboard');
@@ -122,6 +132,8 @@ export function App() {
     editor: 'تفاصيل واضحة. مستند احترافي.',
     settings: 'تأثير، على مقاس عملك.',
     templates: 'هوية شركتك في كل مستند.',
+    customers: 'عملاؤك، أقرب إلى أعمالك.',
+    products: 'منتجاتك، جاهزة للفاتورة القادمة.',
   };
   return (
     <div className="app-shell">
@@ -146,6 +158,8 @@ export function App() {
             [
               { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
               { id: 'documents', label: 'المستندات', icon: Files },
+              { id: 'customers', label: 'العملاء', icon: Users },
+              { id: 'products', label: 'المنتجات', icon: Package },
               {
                 id: 'templates',
                 label: 'قوالب المستندات',
@@ -188,7 +202,9 @@ export function App() {
             </div>
             <div>
               <strong>{data.settings.companyName || 'مساحة عملي'}</strong>
-              <small>نسخة تجريبية · 0.1.0</small>
+              <small>
+                نسخة تجريبية · <bdi dir="ltr">{version}</bdi>
+              </small>
             </div>
           </div>
         </div>
@@ -205,7 +221,11 @@ export function App() {
                   ? 'الإعدادات'
                   : page === 'templates'
                     ? 'القوالب'
-                    : 'المستندات'}
+                    : page === 'customers'
+                      ? 'العملاء'
+                      : page === 'products'
+                        ? 'المنتجات'
+                        : 'المستندات'}
           </div>
           <span className="top-date">
             {new Intl.DateTimeFormat('ar', { dateStyle: 'long' }).format(
@@ -231,7 +251,11 @@ export function App() {
                       ? 'أضف ورق الشركة والختم وحدد موضع المحتوى على صفحة A4.'
                       : page === 'settings'
                         ? 'المعلومات التي تظهر على مستنداتك وتفضيلات مساحة العمل.'
-                        : 'احفظ مسودتك ثم اعتمد المستند عندما يصبح جاهزاً.'}
+                        : page === 'customers'
+                          ? 'أضف بيانات العملاء واخترهم بسهولة عند إنشاء المستندات.'
+                          : page === 'products'
+                            ? 'كل منتج جديد تكتبه في المستند يُضاف تلقائياً عند حفظه.'
+                            : 'احفظ مسودتك ثم اعتمد المستند عندما يصبح جاهزاً.'}
               </p>
             </div>
             {(page === 'dashboard' || page === 'documents') && (
@@ -468,6 +492,16 @@ export function App() {
                 });
                 setDirty(true);
               }}
+            />
+          )}
+          {(page === 'customers' || page === 'products') && (
+            <CatalogPage
+              key={page}
+              kind={page}
+              data={data}
+              reload={reload}
+              notify={notify}
+              onDirty={setDirty}
             />
           )}
           {page === 'settings' && (

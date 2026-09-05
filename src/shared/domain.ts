@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { currencySchema, type Customer, type Product } from './catalog';
 const text = (max: number) => z.string().trim().max(max);
 const decimal = (places: number) =>
   z
@@ -8,6 +9,7 @@ const decimal = (places: number) =>
       'أدخل رقماً موجباً بدقة مناسبة',
     );
 export const itemSchema = z.object({
+  productId: z.string().uuid().nullable().optional(),
   id: z.string().uuid(),
   name: text(300).min(1, 'اسم البند مطلوب'),
   description: text(1000),
@@ -26,7 +28,7 @@ export const settingsSchema = z.object({
   address: text(500),
   phone: text(80),
   email: text(200),
-  currency: z.enum(['TRY', 'USD', 'EUR', 'SAR', 'AED']),
+  currency: currencySchema,
   clientLabel: text(80).min(1),
 });
 const imageData = z
@@ -50,6 +52,8 @@ export const templateSchema = z.object({
   marginBottom: z.number().min(10).max(60),
 });
 export const documentSchema = z.object({
+  currency: currencySchema.optional(),
+  customerId: z.string().uuid().nullable().optional(),
   id: z.string().uuid(),
   revision: z.number().int().nonnegative(),
   typeId: text(80).min(1),
@@ -117,6 +121,8 @@ export type Bootstrap = {
   types: DocumentType[];
   templates: Template[];
   documents: DocumentSummary[];
+  customers: Customer[];
+  products: Product[];
 };
 export const defaultSettings: Settings = {
   companyName: '',
@@ -204,6 +210,7 @@ export function newDocument(
     date,
     clientLabel: settings.clientLabel,
     clientName: '',
+    currency: settings.currency,
     items: [newItem()],
     noteTitle: '',
     noteBody: '',
@@ -221,6 +228,8 @@ export function errorMessage(error: unknown): string {
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface DesktopApi {
   bootstrap(): Promise<Result<Bootstrap>>;
+  saveCustomer(input: Customer): Promise<Result<Customer>>;
+  saveProduct(input: Product): Promise<Result<Product>>;
   getDocument(id: string): Promise<Result<SavedDocument>>;
   saveDocument(input: DocumentInput): Promise<Result<SavedDocument>>;
   saveSettings(input: Settings): Promise<Result<Settings>>;
