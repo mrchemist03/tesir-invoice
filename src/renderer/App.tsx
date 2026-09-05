@@ -93,7 +93,7 @@ export function App() {
     return (
       <div className="loading">
         <div className="brand-mark">ت</div>
-        <h1>تيسير</h1>
+        <h1>تأثير</h1>
         <p>{notice?.text ?? 'جارٍ فتح مساحة عملك…'}</p>
         {notice && (
           <button
@@ -120,7 +120,7 @@ export function App() {
     dashboard: 'مساحة عملك، أكثر ترتيباً.',
     documents: 'كل مستنداتك في مكان واحد.',
     editor: 'تفاصيل واضحة. مستند احترافي.',
-    settings: 'تيسير، على مقاس عملك.',
+    settings: 'تأثير، على مقاس عملك.',
     templates: 'هوية شركتك في كل مستند.',
   };
   return (
@@ -136,7 +136,7 @@ export function App() {
         >
           <div className="brand-mark">ت</div>
           <div>
-            <strong>تيسير</strong>
+            <strong>تأثير</strong>
             <small>TESIR INVOICE</small>
           </div>
         </a>
@@ -218,7 +218,7 @@ export function App() {
             <div>
               <span className="eyebrow">
                 {page === 'dashboard'
-                  ? 'أهلاً بك في تيسير'
+                  ? 'أهلاً بك في تأثير'
                   : 'ببساطة، أنجز أكثر'}
               </span>
               <h1>{titles[page]}</h1>

@@ -55,7 +55,7 @@ else {
       });
     })
     .catch((error) => {
-      dialog.showErrorBox('تعذر فتح تيسير', errorMessage(error));
+      dialog.showErrorBox('تعذر فتح تأثير', errorMessage(error));
       app.quit();
     });
   app.on('window-all-closed', () => {
@@ -78,7 +78,7 @@ async function createWindow() {
     minWidth: 1050,
     minHeight: 720,
     backgroundColor: '#f5f7f6',
-    title: 'تيسير | Tesir Invoice',
+    title: 'تأثير | Tesir Invoice',
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
