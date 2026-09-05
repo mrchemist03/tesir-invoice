@@ -1071,3 +1071,12 @@ a {
     width: calc(100% - 190px);
   }
 }
+
+.field-error {
+  color: #a33f30;
+  font-size: 11px;
+  margin-top: 7px;
+}
+input[aria-invalid='true'] {
+  border-color: #b85240;
+}
