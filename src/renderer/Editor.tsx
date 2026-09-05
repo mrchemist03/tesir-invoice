@@ -233,7 +233,7 @@ export function Editor({
                         update({ templateId: e.target.value || null })
                       }
                     >
-                      <option value="">قالب تيسير البسيط</option>
+                      <option value="">قالب تأثير البسيط</option>
                       {data.templates.map((template) => (
                         <option key={template.id} value={template.id}>
                           {template.name}
