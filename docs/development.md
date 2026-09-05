@@ -58,4 +58,4 @@ git push -u origin feat/document-editor
 
 ## الفحوصات الآلية
 
-تضاف GitHub Actions مع تأسيس التطبيق وملف الاعتماديات: تثبيت من lockfile، فحص TypeScript، التنسيق، الاختبارات والبناء على Windows. لا توجد حالياً workflow تزعم اختبار تطبيق لم يُنشأ بعد.
+تعمل GitHub Actions على Windows: npm ci ثم فحص التنسيق واختبارات الوحدة والبناء (يشمل TypeScript) واختبارات Electron وتعبئة الحزمة. اسم وظيفة الفحص verify.
