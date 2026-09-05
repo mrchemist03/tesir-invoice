@@ -36,7 +36,11 @@ const imageData = z
   .nullable();
 export const templateSchema = z.object({
   id: z.string().uuid(),
-  name: text(120).min(1),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'أدخل اسم القالب قبل الحفظ')
+    .max(120, 'اسم القالب يجب ألا يتجاوز 120 حرفاً'),
   background: imageData,
   stamp: imageData,
   stampX: z.number().min(0).max(80),

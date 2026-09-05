@@ -124,9 +124,31 @@ test('custom types, image templates, backup and multipage PDF work together', as
     await page
       .getByRole('button', { name: 'قوالب المستندات', exact: true })
       .click();
-    await page.getByLabel('اسم القالب', { exact: true }).fill('قالب الاختبار');
+    await page.getByRole('button', { name: 'حفظ القالب', exact: true }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'أدخل اسم القالب قبل الحفظ',
+    );
+    await expect(page.getByLabel('اسم القالب', { exact: true })).toBeFocused();
+    await page.getByLabel('اسم القالب', { exact: true }).fill('   ');
+    await page.getByRole('button', { name: 'حفظ القالب', exact: true }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'أدخل اسم القالب قبل الحفظ',
+    );
+    expect(
+      await page.evaluate(async () => {
+        const result = await window.tesir!.bootstrap();
+        return result.ok ? result.value.templates.length : -1;
+      }),
+    ).toBe(0);
+    await page
+      .getByLabel('اسم القالب', { exact: true })
+      .fill('  قالب الاختبار  ');
     await page.getByRole('button', { name: 'حفظ القالب', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('تم حفظ القالب');
+    await expect(page.getByLabel('اسم القالب', { exact: true })).toHaveValue(
+      'قالب الاختبار',
+    );
+    await expect(page.getByRole('alert')).toHaveCount(0);
     const result = await page.evaluate(async () => {
       const boot = await window.tesir!.bootstrap();
       if (!boot.ok) throw new Error(boot.error);

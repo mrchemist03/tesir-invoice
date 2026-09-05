@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   DatabaseBackup,
   ImagePlus,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import {
   errorMessage,
+  templateSchema,
   type Bootstrap,
   type Settings,
   type Template,
@@ -234,7 +235,10 @@ export function TemplatesPage({ data, reload, notify, onDirty }: Props) {
   );
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const nameInput = useRef<HTMLInputElement>(null);
   function update(patch: Partial<Template>) {
+    if (patch.name !== undefined) setNameError('');
     setTemplate((current) => ({ ...current, ...patch }));
     setDirty(true);
     onDirty(true);
@@ -242,6 +246,7 @@ export function TemplatesPage({ data, reload, notify, onDirty }: Props) {
   function select(value: Template) {
     if (dirty && !window.confirm('تجاهل تغييرات القالب غير المحفوظة؟')) return;
     setTemplate(value);
+    setNameError('');
     setDirty(false);
     onDirty(false);
   }
@@ -257,9 +262,17 @@ export function TemplatesPage({ data, reload, notify, onDirty }: Props) {
     }
   }
   async function save() {
+    const validation = templateSchema.shape.name.safeParse(template.name);
+    if (!validation.success) {
+      setNameError(validation.error.issues[0].message);
+      nameInput.current?.focus();
+      return;
+    }
+    setNameError('');
     setBusy(true);
     try {
-      await unwrap(api().saveTemplate(template));
+      const saved = await unwrap(api().saveTemplate(template));
+      setTemplate(saved);
       await reload();
       setDirty(false);
       onDirty(false);
@@ -296,14 +309,24 @@ export function TemplatesPage({ data, reload, notify, onDirty }: Props) {
         </div>
         <fieldset disabled={busy}>
           <label>
-            اسم القالب
+            اسم القالب (مطلوب)
             <input
+              ref={nameInput}
+              required
+              maxLength={120}
+              aria-invalid={Boolean(nameError)}
+              aria-describedby={nameError ? 'template-name-error' : undefined}
               aria-label="اسم القالب"
               placeholder="مثال: ورق الشركة الرسمي"
               value={template.name}
               onChange={(e) => update({ name: e.target.value })}
             />
           </label>
+          {nameError && (
+            <p id="template-name-error" role="alert" className="field-error">
+              {nameError}
+            </p>
+          )}
           <div className="upload-controls">
             <button
               className="upload-button"
