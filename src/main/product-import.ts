@@ -21,7 +21,7 @@ const aliases = [
   ['العملة', 'currency'],
   ['الضريبة %', 'الضريبة', 'tax', 'tax %', 'taxpercent'],
 ];
-function value(cell: ExcelJS.Cell): string {
+export function value(cell: ExcelJS.Cell): string {
   const v = cell.value;
   if (v === null || v === undefined) return '';
   if (typeof v === 'string' || typeof v === 'number') return String(v).trim();
@@ -34,7 +34,7 @@ function value(cell: ExcelJS.Cell): string {
     'استخدم لصق القيم فقط؛ الصيغ والتواريخ والخلايا غير النصية أو الرقمية غير مدعومة',
   );
 }
-function decimal(text: string): string {
+export function decimal(text: string): string {
   return text
     .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 1632))
     .replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 1776))

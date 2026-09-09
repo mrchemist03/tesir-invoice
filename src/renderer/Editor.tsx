@@ -1,3 +1,4 @@
+import { DocumentImport } from './DocumentImport';
 import { amountInWords } from '../shared/tafqeet';
 import { useState } from 'react';
 import { catalogKey } from '../shared/catalog';
@@ -321,6 +322,13 @@ export function Editor({
                   تظهر المنتجات بعملة المستند ({currency}). المنتجات والعملاء
                   الجدد يُحفظون تلقائياً عند حفظ المستند.
                 </p>
+                <DocumentImport
+                  currency={currency}
+                  items={doc.items}
+                  disabled={locked || busy}
+                  onApply={(items) => update({ items })}
+                  notify={notify}
+                />
                 <div className="items-list">
                   {doc.items.map((item, index) => (
                     <div className="item-card" key={item.id}>

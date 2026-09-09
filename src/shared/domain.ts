@@ -232,6 +232,10 @@ export function errorMessage(error: unknown): string {
 }
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface DesktopApi {
+  readDocumentExcel(
+    currency: Settings['currency'],
+  ): Promise<Result<import('./document-import').DocumentImportPreview | null>>;
+  downloadDocumentTemplate(): Promise<Result<boolean>>;
   readProductsExcel(): Promise<
     Result<import('./product-import').ImportPreview | null>
   >;

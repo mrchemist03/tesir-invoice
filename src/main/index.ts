@@ -1,3 +1,5 @@
+import { readDocumentExcel } from './document-import';
+import { currencySchema } from '../shared/catalog';
 import { readProductsExcel } from './product-import';
 import { copyFileSync } from 'node:fs';
 import {
@@ -121,6 +123,29 @@ function registerHandlers() {
         return { ok: false, error: errorMessage(error) };
       }
     });
+  handle('read-document-excel', async (input) => {
+    const currency = currencySchema.parse(input);
+    const result = await dialog.showOpenDialog(main, {
+      title: 'استيراد بنود المستند من Excel',
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    return readDocumentExcel(result.filePaths[0], currency);
+  });
+  handle('download-document-template', async () => {
+    const result = await dialog.showSaveDialog(main, {
+      title: 'حفظ قالب بنود المستند',
+      defaultPath: 'Tesir-Document-Items.xlsx',
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    });
+    if (result.canceled || !result.filePath) return false;
+    copyFileSync(
+      join(__dirname, '../assets/document-items-template.xlsx'),
+      result.filePath,
+    );
+    return true;
+  });
   handle('import-products', (input) => store.importProducts(input));
   handle('read-products-excel', async () => {
     const result = await dialog.showOpenDialog(main, {

@@ -1,6 +1,10 @@
 import { mkdirSync, copyFileSync } from 'node:fs';
 mkdirSync('dist/assets', { recursive: true });
 copyFileSync(
+  'assets/document-items-template.xlsx',
+  'dist/assets/document-items-template.xlsx',
+);
+copyFileSync(
   'assets/products-template.xlsx',
   'dist/assets/products-template.xlsx',
 );
