@@ -24,6 +24,7 @@ export const itemSchema = z.object({
   discount: decimal(2).nullable(),
 });
 export const settingsSchema = z.object({
+  tafqeetEnabled: z.boolean().default(true),
   companyName: text(200),
   address: text(500),
   phone: text(80),
@@ -52,6 +53,7 @@ export const templateSchema = z.object({
   marginBottom: z.number().min(10).max(60),
 });
 export const documentSchema = z.object({
+  showAmountInWords: z.boolean().optional(),
   currency: currencySchema.optional(),
   customerId: z.string().uuid().nullable().optional(),
   id: z.string().uuid(),
@@ -96,6 +98,7 @@ export type Totals = {
   lines: { subtotal: number; discount: number; tax: number; total: number }[];
 };
 export type SavedDocument = DocumentInput & {
+  amountInWords?: string;
   number: string;
   typeName: string;
   currency: Settings['currency'];
@@ -125,6 +128,7 @@ export type Bootstrap = {
   products: Product[];
 };
 export const defaultSettings: Settings = {
+  tafqeetEnabled: true,
   companyName: '',
   address: '',
   phone: '',
@@ -208,6 +212,7 @@ export function newDocument(
     revision: 0,
     typeId,
     date,
+    showAmountInWords: settings.tafqeetEnabled,
     clientLabel: settings.clientLabel,
     clientName: '',
     currency: settings.currency,
@@ -227,6 +232,13 @@ export function errorMessage(error: unknown): string {
 }
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface DesktopApi {
+  readProductsExcel(): Promise<
+    Result<import('./product-import').ImportPreview | null>
+  >;
+  importProducts(
+    input: Product[],
+  ): Promise<Result<{ added: number; skipped: number }>>;
+  downloadProductsTemplate(): Promise<Result<boolean>>;
   bootstrap(): Promise<Result<Bootstrap>>;
   saveCustomer(input: Customer): Promise<Result<Customer>>;
   saveProduct(input: Product): Promise<Result<Product>>;

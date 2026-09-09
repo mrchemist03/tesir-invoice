@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopApi } from '../shared/domain';
 const api: DesktopApi = {
+  readProductsExcel: () => ipcRenderer.invoke('tesir:read-products-excel'),
+  importProducts: (input) => ipcRenderer.invoke('tesir:import-products', input),
+  downloadProductsTemplate: () =>
+    ipcRenderer.invoke('tesir:download-products-template'),
   bootstrap: () => ipcRenderer.invoke('tesir:bootstrap'),
   saveCustomer: (input) => ipcRenderer.invoke('tesir:save-customer', input),
   saveProduct: (input) => ipcRenderer.invoke('tesir:save-product', input),

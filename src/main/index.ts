@@ -1,3 +1,5 @@
+import { readProductsExcel } from './product-import';
+import { copyFileSync } from 'node:fs';
 import {
   app,
   BrowserWindow,
@@ -119,6 +121,34 @@ function registerHandlers() {
         return { ok: false, error: errorMessage(error) };
       }
     });
+  handle('import-products', (input) => store.importProducts(input));
+  handle('read-products-excel', async () => {
+    const result = await dialog.showOpenDialog(main, {
+      title: 'استيراد المنتجات من Excel',
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const data = store.bootstrap();
+    return readProductsExcel(
+      result.filePaths[0],
+      data.settings.currency,
+      data.products,
+    );
+  });
+  handle('download-products-template', async () => {
+    const result = await dialog.showSaveDialog(main, {
+      title: 'حفظ قالب المنتجات',
+      defaultPath: 'Tesir-Products-Template.xlsx',
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    });
+    if (result.canceled || !result.filePath) return false;
+    copyFileSync(
+      join(__dirname, '../assets/products-template.xlsx'),
+      result.filePath,
+    );
+    return true;
+  });
   handle('bootstrap', () => store.bootstrap());
   handle('save-customer', (input) => store.saveCustomer(input));
   handle('save-product', (input) => store.saveProduct(input));

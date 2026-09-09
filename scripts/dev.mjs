@@ -1,3 +1,9 @@
+import { mkdirSync, copyFileSync } from 'node:fs';
+mkdirSync('dist/assets', { recursive: true });
+copyFileSync(
+  'assets/products-template.xlsx',
+  'dist/assets/products-template.xlsx',
+);
 import { build } from 'esbuild';
 import { createServer } from 'vite';
 import { spawn } from 'node:child_process';
