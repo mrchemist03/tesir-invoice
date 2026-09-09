@@ -76,6 +76,15 @@ export function SettingsPage({ data, reload, notify, onDirty }: Props) {
           <h2>بيانات الشركة</h2>
           <span className="count-label">تظهر على المستندات</span>
         </div>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={settings.tafqeetEnabled}
+            disabled={busy}
+            onChange={(e) => update({ tafqeetEnabled: e.target.checked })}
+          />
+          تفعيل التفقيط تلقائياً للمستندات الجديدة
+        </label>
         <fieldset disabled={busy}>
           <div className="form-grid">
             <label className="span-two">

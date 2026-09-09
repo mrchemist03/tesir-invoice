@@ -46,3 +46,6 @@ Desktop.ini
 # Test reports
 playwright-report/
 test-results/
+
+# Artifact previews
+outputs/

@@ -1,3 +1,9 @@
+import { mkdirSync, copyFileSync } from 'node:fs';
+mkdirSync('dist/assets', { recursive: true });
+copyFileSync(
+  'assets/products-template.xlsx',
+  'dist/assets/products-template.xlsx',
+);
 import { build as bundle } from 'esbuild';
 import { build } from 'vite';
 await bundle({

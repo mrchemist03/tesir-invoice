@@ -1,3 +1,4 @@
+import { amountInWords } from '../shared/tafqeet';
 import { useState } from 'react';
 import { catalogKey } from '../shared/catalog';
 import { Copy, Eye, FileDown, Plus, Printer, Save, Trash2 } from 'lucide-react';
@@ -57,6 +58,12 @@ export function Editor({
           'template' in doc && !dirty
             ? doc.template
             : (data.templates.find((t) => t.id === doc.templateId) ?? null),
+        amountInWords:
+          !dirty && 'amountInWords' in doc
+            ? doc.amountInWords
+            : doc.showAmountInWords
+              ? amountInWords(totals.total, currency)
+              : undefined,
         totals,
         createdAt: '',
         updatedAt: '',
@@ -155,6 +162,15 @@ export function Editor({
           </option>
         ))}
       </datalist>
+      <label className="checkbox-label">
+        <input
+          type="checkbox"
+          checked={doc.showAmountInWords ?? false}
+          disabled={locked || busy}
+          onChange={(e) => update({ showAmountInWords: e.target.checked })}
+        />
+        تفقيط الإجمالي تلقائياً في المستند
+      </label>
       <div className="editor-toolbar">
         <div className="toolbar-title">
           <span className={`status ${locked ? 'final' : 'draft'}`}>

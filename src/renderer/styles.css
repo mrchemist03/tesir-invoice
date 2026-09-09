@@ -1188,3 +1188,27 @@ input[aria-invalid='true'] {
     padding-top: 13px;
   }
 }
+.product-import {
+  margin: 14px 0 20px;
+}
+.import-preview {
+  margin-top: 16px;
+  padding: 18px;
+  background: #f4f8f6;
+  border: 1px solid #c8dbd2;
+  border-radius: 12px;
+}
+.import-preview h3 {
+  margin-top: 0;
+}
+.import-preview p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.import-rows {
+  max-height: 360px;
+  margin: 14px 0;
+}
+.import-error {
+  color: #a82c2c;
+}

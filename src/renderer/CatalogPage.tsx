@@ -1,3 +1,4 @@
+import { ProductImport } from './ProductImport';
 import { useState } from 'react';
 import { Package, Pencil, Plus, Save, Search, Users } from 'lucide-react';
 import {
@@ -83,6 +84,7 @@ export function CatalogPage({ kind, data, reload, notify, onDirty }: Props) {
             {entries.length} {customers ? 'عميل' : 'منتج'}
           </span>
         </div>
+        {!customers && <ProductImport reload={reload} notify={notify} />}
         <div className="catalog-filters">
           <label className="search-field">
             <Search size={17} />

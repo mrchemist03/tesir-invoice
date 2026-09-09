@@ -1,3 +1,4 @@
+import { amountInWords } from '../shared/tafqeet';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -221,6 +222,8 @@ export class Store {
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
+      if (input.showAmountInWords)
+        saved.amountInWords = amountInWords(totals.total, saved.currency);
       saved.customerId = this.rememberCustomer(
         input.clientName,
         input.customerId,
@@ -375,6 +378,39 @@ export class Store {
           JSON.stringify(product),
         );
       return product;
+    });
+  }
+  importProducts(raw: unknown): { added: number; skipped: number } {
+    const inputs = z.array(productSchema).min(1).max(5000).parse(raw);
+    return this.transaction(() => {
+      let added = 0;
+      let skipped = 0;
+      for (const input of inputs) {
+        if (
+          this.db
+            .prepare('SELECT 1 FROM products WHERE name_key=? AND currency=?')
+            .get(catalogKey(input.name), input.currency)
+        ) {
+          skipped++;
+          continue;
+        }
+        const product = {
+          ...input,
+          id: randomUUID(),
+          revision: 1,
+          archived: false,
+        };
+        this.db
+          .prepare('INSERT INTO products VALUES(?,?,?,?)')
+          .run(
+            product.id,
+            catalogKey(product.name),
+            product.currency,
+            JSON.stringify(product),
+          );
+        added++;
+      }
+      return { added, skipped };
     });
   }
   saveSettings(raw: unknown): Settings {
