@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopApi } from '../shared/domain';
 const api: DesktopApi = {
+  readDocumentExcel: (currency) =>
+    ipcRenderer.invoke('tesir:read-document-excel', currency),
+  downloadDocumentTemplate: () =>
+    ipcRenderer.invoke('tesir:download-document-template'),
   readProductsExcel: () => ipcRenderer.invoke('tesir:read-products-excel'),
   importProducts: (input) => ipcRenderer.invoke('tesir:import-products', input),
   downloadProductsTemplate: () =>
